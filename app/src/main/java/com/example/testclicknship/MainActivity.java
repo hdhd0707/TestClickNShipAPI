@@ -14,13 +14,15 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class MainActivity extends AppCompatActivity {
-    String myUrl = "http://10.0.2.2:8770/api/catalogueService/catalogue/product/getRecommendedProducts?page=0&size=6";
+    String myUrl = "http://10.0.2.2:8770/api/authenticationService/oauth/token";
     TextView resultsTextView;
     ProgressDialog progressDialog;
     Button displayData;
@@ -67,23 +69,32 @@ public class MyAsyncTasks extends AsyncTask<String, String, String> {
                     url = new URL(myUrl);
                     //open a URL connection
                     urlConnection = (HttpURLConnection) url.openConnection();
-//                    urlConnection.setRequestProperty("Host", "10.0.2.2:8770");
-//                    urlConnection.setRequestProperty("Origin", "http://10.0.2.2:8770");
-//                    urlConnection.setRequestProperty("Referer", "http://10.0.2.2:8770/catalogue");
-//                    urlConnection.setRequestProperty("Sec-Fetch-Dest", "empty");
-//                    urlConnection.setRequestProperty("Sec-Fetch-Mode", "cors");
-//                    urlConnection.setRequestProperty("Sec-Fetch-Site", "same-origin");
 
-                    InputStream in = urlConnection.getInputStream();
-                    InputStreamReader isw = new InputStreamReader(in);
-                    int data = isw.read();
-                    while (data != -1) {
-                        result += (char) data;
-                        data = isw.read();
+                    urlConnection.setRequestMethod("POST");
+                    urlConnection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+                    urlConnection.setRequestProperty("Accept", "application/json");
+                    urlConnection.setDoOutput(true);
+                    String jsonInputString = "grant_type=password&client_id=client-app&client_secret=123456&username=testuser&password=FKhHZ0Zrg7ckwisTnFoYtg==&otp=undefined";
+
+                    try(OutputStream os = urlConnection.getOutputStream()) {
+                        byte[] input = jsonInputString.getBytes("utf-8");
+                        os.write(input, 0, input.length);
                     }
 
-                    // return the data to onPostExecute method
-                    return result;
+                    urlConnection.connect();
+
+                    StringBuilder response = new StringBuilder();
+                    try(BufferedReader br = new BufferedReader(
+                            new InputStreamReader(urlConnection.getInputStream(), "utf-8"))) {
+                        String responseLine = null;
+                        while ((responseLine = br.readLine()) != null) {
+                            response.append(responseLine.trim());
+                        }
+                        System.out.println(response.toString());
+                    }
+
+                    return response.toString();
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 } finally {
